@@ -1,4 +1,3 @@
-import { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 
 const mongodbUser = process.env.MONGODB_USER;
