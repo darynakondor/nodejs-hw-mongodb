@@ -3,6 +3,7 @@ import httpErrors from 'http-errors';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import mongoose from 'mongoose';
 
 export const getContacts = async (req, res, next) => {
     try {
@@ -22,7 +23,15 @@ export const getContacts = async (req, res, next) => {
         res.status(200).json({
             status: 200,
             message: "Successfully found contacts!",
-            data: contacts
+            data: {
+                data: contacts.contacts, 
+                page: contacts.page,
+                perPage: contacts.perPage,
+                totalItems: contacts.totalItems,
+                totalPages: contacts.totalPages,
+                hasPreviousPage: contacts.hasPreviousPage,
+                hasNextPage: contacts.hasNextPage,
+            }
         });
     } catch (error) {
         next(error); 
@@ -33,6 +42,11 @@ export const getContactById = async (req, res, next) => {
 
     try {
         const { contactId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(contactId)) {
+            return next(httpErrors(400, 'Invalid ID format'));
+        }
+
         const contact = await getContactByIdService(contactId);
 
         if (!contact) { 
@@ -91,6 +105,11 @@ export const updateContact = async (req, res, next) => {
 export const deleteContact = async (req, res, next) => {
     try {
       const { contactId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(contactId)) {
+        return next(httpErrors(400, 'Invalid ID format'));
+      }
+
       const deletedContact = await deleteContactById(contactId);
   
     if (!deletedContact) {
