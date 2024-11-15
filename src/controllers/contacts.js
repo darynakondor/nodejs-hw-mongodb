@@ -10,6 +10,8 @@ export const getContacts = async (req, res, next) => {
         const { page, perPage } = parsePaginationParams(req.query);
         const { sortBy, sortOrder } = parseSortParams(req.query);
         const filter = parseFilterParams(req.query);
+        const userId = req.user.id;
+
         const contacts = await getAllContacts(
 {
     page,
@@ -17,6 +19,7 @@ export const getContacts = async (req, res, next) => {
     sortBy,
     sortOrder,
     filter,
+    userId
 }
         );
 
@@ -42,16 +45,18 @@ export const getContactById = async (req, res, next) => {
 
     try {
         const { contactId } = req.params;
+        const userId = req.user.id;
 
         if (!mongoose.Types.ObjectId.isValid(contactId)) {
             return next(httpErrors(400, 'Invalid ID format'));
         }
 
-        const contact = await getContactByIdService(contactId);
+        const contact = await getContactByIdService(contactId, userId);
 
         if (!contact) { 
             throw httpErrors(404, "Contact not found");
         }
+        console.log(contact);
         res.status(200).json({
             status: 200,
             message: `Successfully found contact with id ${contactId}!`,
@@ -65,12 +70,13 @@ export const getContactById = async (req, res, next) => {
 export const createContactController = async (req, res, next) => {
     try {
         const { name, phoneNumber, email, isFavourite, contactType } = req.body;
+        const userId = req.user.id;
         
         if (!name || !phoneNumber || !contactType) {
             throw httpErrors(400, 'Name, phoneNumber, and contactType are required');
         }
 
-        const newContact = await createContact({ name, phoneNumber, email, isFavourite, contactType });
+        const newContact = await createContact({ name, phoneNumber, email, isFavourite, contactType, userId });
 
         res.status(201).json({
             status: 201,
@@ -86,7 +92,8 @@ export const updateContact = async (req, res, next) => {
     try {
         const { contactId } = req.params;
         const { name, phoneNumber, email, isFavourite, contactType } = req.body;
-        const updatedContact = await updateContactService(contactId, { name, phoneNumber, email, isFavourite, contactType });
+        const userId = req.user.id;
+        const updatedContact = await updateContactService(contactId, { name, phoneNumber, email, isFavourite, contactType }, userId);
 
         if (!updatedContact) {
             throw httpErrors(404, "Contact not found");
@@ -105,12 +112,13 @@ export const updateContact = async (req, res, next) => {
 export const deleteContact = async (req, res, next) => {
     try {
       const { contactId } = req.params;
+      const userId = req.user.id;
 
       if (!mongoose.Types.ObjectId.isValid(contactId)) {
         return next(httpErrors(400, 'Invalid ID format'));
       }
 
-      const deletedContact = await deleteContactById(contactId);
+      const deletedContact = await deleteContactById(contactId, userId);
   
     if (!deletedContact) {
       throw httpErrors(404, 'Contact not found');

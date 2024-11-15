@@ -1,6 +1,15 @@
 import createError from 'http-errors';
 
 const errorHandler = (err, req, res, next) => {
+  console.log("error occurs");
+  console.log("");
+  console.log("");
+  console.log("");
+  console.log("");
+  console.log(err);
+  console.log("");
+  console.log("");
+  console.log("");
   if (!err.status) {
     err = createError(500, 'Something went wrong');
   }
