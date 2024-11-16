@@ -4,6 +4,10 @@ import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
 import mongoose from 'mongoose';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 
 export const getContacts = async (req, res, next) => {
     try {
@@ -69,6 +73,22 @@ export const getContactById = async (req, res, next) => {
 
 export const createContactController = async (req, res, next) => {
     try {
+        let photo;
+        if (typeof req.file !== 'undefined') {
+            if (process.env.ENABLE_CLOUDINARY === 'true') {
+              const result = await uploadToCloudinary(req.file.path);
+              await fs.unlink(req.file.path);
+        
+              photo = result.secure_url;
+            } else {
+              await fs.rename(
+                req.file.path,
+                path.resolve('src', 'public/avatars', req.file.filename),
+              );
+        
+              photo = `http://localhost:8080/avatars/${req.file.filename}`;
+            }
+          }
         const { name, phoneNumber, email, isFavourite, contactType } = req.body;
         const userId = req.user.id;
         
@@ -76,7 +96,7 @@ export const createContactController = async (req, res, next) => {
             throw httpErrors(400, 'Name, phoneNumber, and contactType are required');
         }
 
-        const newContact = await createContact({ name, phoneNumber, email, isFavourite, contactType, userId });
+        const newContact = await createContact({ name, phoneNumber, email, isFavourite, contactType, userId, photo });
 
         res.status(201).json({
             status: 201,
@@ -90,10 +110,30 @@ export const createContactController = async (req, res, next) => {
 
 export const updateContact = async (req, res, next) => {
     try {
+        let photo;
+        if (typeof req.file !== 'undefined') {
+            if (process.env.ENABLE_CLOUDINARY === 'true') {
+              const result = await uploadToCloudinary(req.file.path);
+              await fs.unlink(req.file.path);
+        
+              photo = result.secure_url;
+            } else {
+              await fs.rename(
+                req.file.path,
+                path.resolve('src', 'public/avatars', req.file.filename),
+              );
+        
+              photo = `http://localhost:8080/avatars/${req.file.filename}`;
+            }
+          }
         const { contactId } = req.params;
         const { name, phoneNumber, email, isFavourite, contactType } = req.body;
         const userId = req.user.id;
-        const updatedContact = await updateContactService(contactId, { name, phoneNumber, email, isFavourite, contactType }, userId);
+        var payload = {
+            name,phoneNumber,email,isFavourite,contactType
+        }
+        if (photo) payload.photo = photo;
+        const updatedContact = await updateContactService(contactId, payload, userId);
 
         if (!updatedContact) {
             throw httpErrors(404, "Contact not found");

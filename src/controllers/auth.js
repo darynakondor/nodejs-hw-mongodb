@@ -1,5 +1,5 @@
 import createHttpError from "http-errors";
-import { loginUserService, logoutUserService, refreshSessionService, registerUserService } from "../services/auth.js";
+import { loginUserService, logoutUserService, refreshSessionService, registerUserService, requestResetPassword, resetPassword } from "../services/auth.js";
 const isProduction = process.env.PRODUCTION;
 export const registerUserController = async (req, res, next) => {
     try {
@@ -124,3 +124,32 @@ export const logoutUserController = async (req, res, next) => {
       next(error);
     }
 };
+export const sendResetEmailController = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            throw createHttpError(400, 'Session ID and refresh token are required');
+        }
+
+        await requestResetPassword(email);
+        res.status(200).json({
+            status: 200,
+       message: "Reset password email has been successfully sent.",
+       data: {}
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+export const resetPasswordController = async (req,res,next) => {
+    try {
+        const { token, password } = req.body;
+        await resetPassword(password, token);
+        res.status(200).json({status: 200,
+            message: "Password has been successfully reset.",
+            data: {}})
+    } catch( error) {
+        next(error);
+    }
+}
